@@ -1,0 +1,7 @@
+output/*
+backup_files/*
+sample_imgs/*
+vinbigdata/*
+.vscode/*
+scripts/__pycache__
+scripts/*.csv

@@ -1,0 +1,50 @@
+common:
+
+  model:
+    model: "tf_efficientdet_d0"
+    channels_last: False
+    distributed: False
+    pretrained: True
+    num_classes: 15
+    image_size: [1024,1024]
+    batch_size: 16
+    clip_grad: 10.0
+    save_images: False
+    recovery_interval: 0
+    local_rank: 0
+    world_size: 1
+    log_interval: 50
+
+    
+
+
+  optimizer:
+    opt: "momentum"
+    momentum: 0.9
+    weight_decay: 4.0e-5
+    lr: 0.09
+
+
+
+  scheduler:
+    epochs: 40
+    lr_noise: 
+    warmup_lr: 0.0001
+    min_lr: 1.0e-5
+    cooldown_epochs: 10
+    sched: "cosine"
+    decay_rate: 0.1
+    log_interval: 50
+    warmup_epochs: 5
+
+  augmentation:
+    re_prob: 0
+    re_mode: "pixel"
+    re_count: 1
+
+  eval_metric: "map"
+  use_amp: "native"
+  model_ema: 
+  output_dir: "/content/output"
+  
+     
