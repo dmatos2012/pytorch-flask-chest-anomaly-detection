@@ -5,3 +5,4 @@ vinbigdata/*
 .vscode/*
 scripts/__pycache__
 scripts/*.csv
+possible_stuff.txt

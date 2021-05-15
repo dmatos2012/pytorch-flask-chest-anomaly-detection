@@ -1,5 +1,6 @@
 # from input256_p100_train_effnet import config
 import os
+import base64
 import sys
 from torch.utils.data import DataLoader
 from torchvision.transforms import functional as F
@@ -143,15 +144,31 @@ def get_prediction(img_bytes):
 
 
 app = Flask(__name__)
-@app.route('/predict', methods = ['POST'])
+@app.route('/predict/', methods = ['POST'])
 def predict():
+    results = {}
     if request.method == 'POST':
-        file = request.files['file']
-        print("file", file)
-        img_bytes = file.read()
+        req = request.get_json(force=True) # why force = true?
+        img_bytes = req["image"]
+        img_bytes = base64.b64decode(img_bytes)
+        # file = request.files['file']
+        # print("file", file)
+        # img_bytes = file.read()
         bboxes, score, label = get_prediction(img_bytes)
-        return jsonify({'bboxes':bboxes.tolist(), 'label':label.tolist(), 'score':score.tolist()})
+        results = {"bbox": bboxes.tolist(), "score": score.tolist(), "label":label.tolist()}
+        resf = {"results": results}
+        print("[+] results {}".format(resf))
+        return jsonify(resf)
+        # return jsonify({'bboxes':bboxes.tolist(), 'label':label.tolist(), 'score':score.tolist()})
 
+@app.after_request
+def add_headers(response):
+    response.headers.add('Access-Control-Allow-Origin', "*")
+    # response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+
+    return response
 
 if __name__ == '__main__':
-    app.run(debug = True, use_reloader=False)
+    app.run(debug = True,  host='0.0.0.0')
+
+#use_reloader=False
