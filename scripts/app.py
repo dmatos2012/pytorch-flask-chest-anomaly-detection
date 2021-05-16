@@ -1,38 +1,21 @@
-# from input256_p100_train_effnet import config
 import os
 import base64
-import sys
-from torch.utils.data import DataLoader
 from torchvision.transforms import functional as F
-import requests
 from PIL import Image
-from effdet import create_model, unwrap_bench, create_loader,create_model_from_config,  DetBenchTrain, EfficientDet, create_evaluator
+from effdet import create_model_from_config
 from effdet.config import get_efficientdet_config
 import yaml
 from easydict import EasyDict
 
-
-from effdet.efficientdet import HeadNet
-from effdet.data import resolve_input_config
 import torchvision.transforms as transforms
 
-from timm.optim import create_optimizer
-from timm.scheduler import create_scheduler
 import io
-import time
 import torch
 import numpy as np 
 import torch.nn.parallel
 from contextlib import suppress
-
-from effdet import create_model, create_evaluator, create_dataset, create_loader
 from effdet.data import resolve_input_config
-from timm.utils import AverageMeter, setup_default_logging
 from timm.models.layers import set_layer_config
-
-import pandas as pd
-
-import os
 from flask import Flask, jsonify, request
 import numpy as np
 
@@ -45,11 +28,25 @@ with open("./scripts/detection_config.yaml","r") as stream:
 
 config.model.model = "tf_efficientdet_d4"
 
+id2name = {0:"Aortic enlargement",
+    1: "Atelectasis",
+    2:"Calcification",
+    3 : "Cardiomegaly",
+    4 : "Consolidation",
+    5 : "ILD",
+    6 : "Infiltration",
+    7 : "Lung Opacity",
+    8 : "Nodule/Mass",
+    9 : "Other lesion",
+    10 : "Pleural effusion",
+    11 : "Pleural thickening",
+    12 : "Pneumothorax",
+    13 : "Pulmonary fibrosis",
+    14: "No Findings"}
+
 
 #Input to model should be [BATCH SIZE, CHANNELS, W,H]
 root = os.getcwd()
-# validation_dataset =  XRayDataset(root, get_transform(train = False), split="test")
-# img = validation_dataset.__getitem__(0)
 model_name =  "tf_efficientdet_d4"
 num_classes = 15
 pretrained = False
@@ -76,19 +73,14 @@ native_amp = True
 amp_autocast = torch.cuda.amp.autocast
 print("Using native Torch AMP. Validating in mixed precision.")
 bench.eval()
-score_threshold = 0.20 #0.35 the first time. #0.60 highest
+score_threshold = 0.45 #0.35 the first time. #0.60 highest
 
 
 
 def rescale_bboxes(bboxes, img_width, img_height):
+    # Currently only supporting 256 x 256 images.
     # if different size than 256(default), I need to rescale as code below
     # otherwise it will stay the same(which is correct for now)
-    
-    # img_width = 2336 # original img size. fix
-    # img_height = 2836 # original img size. fix
-
-#   img_width = target['img_info'][0]
-#   img_height = target['img_info'][1]
 
     def_img_size = 256
     x_scale = img_width/def_img_size
@@ -133,10 +125,12 @@ def get_prediction(img_bytes):
                 label = label[indices]
                 bboxes = bboxes[indices]
                 score = score[indices]
-                if indices[0].size == 0 or 14 in label: #empty or "no finding"
+                label = [id2name[infection] for infection in label]
+                if indices[0].size == 0 or "No Findings" in label: #empty or "no finding"
                     bboxes = np.array([0,0,1,1], ndmin=2)
                     #emptyscore = np.array([1])
                     label = np.array([14]) #label[indices]
+                    label = ["No Findings"]
 
                 bboxes = rescale_bboxes(bboxes, img_width, img_height)
     return bboxes, score, label
@@ -151,21 +145,16 @@ def predict():
         req = request.get_json(force=True) # why force = true?
         img_bytes = req["image"]
         img_bytes = base64.b64decode(img_bytes)
-        # file = request.files['file']
-        # print("file", file)
-        # img_bytes = file.read()
         bboxes, score, label = get_prediction(img_bytes)
-        results = {"bbox": bboxes.tolist(), "score": score.tolist(), "label":label.tolist()}
-        resf = {"results": results}
-        print("[+] results {}".format(resf))
-        return jsonify(resf)
-        # return jsonify({'bboxes':bboxes.tolist(), 'label':label.tolist(), 'score':score.tolist()})
+        results = {"bbox": bboxes.tolist(), "score": score.tolist(), "label":label} #label.tolist()
+        result_dict = {"results": results}
+        print("[+] results {}".format(result_dict))
+        return jsonify(result_dict)
 
 @app.after_request
 def add_headers(response):
     response.headers.add('Access-Control-Allow-Origin', "*")
-    # response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     return response
 
 if __name__ == '__main__':

@@ -1,13 +1,80 @@
+// ************************ Drag and drop ***************** //
+let dropArea = document.getElementById("drop-area")
 const canvas = document.getElementById('canvas');
-const image = document.getElementById('selected-image'); 
+// const image = document.getElementById('selected-image')
+const image = document.createElement("img");
+// Prevent default drag behaviors
+;['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+  dropArea.addEventListener(eventName, preventDefaults, false)   
+  document.body.addEventListener(eventName, preventDefaults, false)
+})
 
-let base64Image;
-let img_width;
-let img_height;
+// Highlight drop area when item is dragged over it
+;['dragenter', 'dragover'].forEach(eventName => {
+  dropArea.addEventListener(eventName, highlight, false)
+})
 
-function drawObject(response){
-    canvas.width = img_width;
-    canvas.height = img_height;
+;['dragleave', 'drop'].forEach(eventName => {
+  dropArea.addEventListener(eventName, unhighlight, false)
+})
+
+// Handle dropped files
+dropArea.addEventListener('drop', handleDrop, false)
+
+function preventDefaults (e) {
+  e.preventDefault()
+  e.stopPropagation()
+}
+
+function highlight(e) {
+  dropArea.classList.add('highlight')
+}
+
+function unhighlight(e) {
+  dropArea.classList.remove('active')
+}
+
+dropArea.addEventListener('drop', handleDrop, false)
+
+function handleDrop(e) {
+  let dt = e.dataTransfer
+  let files = dt.files
+  ParseFiles(files)
+
+//   handleFiles(files)
+
+}
+
+function handleFiles(files) {
+    // files = [...files]
+    // // initializeProgress(files.length)
+    // files.forEach(ParseFiles)
+  }
+
+function ParseFiles(files){
+    console.log(files)
+    const file = files[0];
+    console.log("file" + file)
+    const imageType = /image.*/;
+    console.log("img type" + imageType)
+    if (file.type.match(imageType)) {
+        // warning.innerHTML = '';
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onloadend = () => {
+        image.src = reader.result;
+        let img_url = reader.result
+        let img_base64 = img_url.replace("data:image/png;base64,","");
+        // send the img to server
+        communicate(img_base64);
+        }
+    }
+}
+
+function drawResult(response){
+    let colorPalette = ["red", "orange","cyan", "sky blue", "blue", "magenta", "pink", "yellow"]
+    canvas.width = 256; // img_width form index.js
+    canvas.height = 256; // img_height from index.js
     ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height); //x,y,w,h
     ctx.drawImage(image, 0,0); // is it selected image? double check
@@ -18,70 +85,28 @@ function drawObject(response){
         ctx.beginPath();
         ctx.lineWidth="4";
 
-        ctx.strokeStyle="red";
-        ctx.fillStyle="red";
+        ctx.strokeStyle=colorPalette[i];
+        ctx.fillStyle=colorPalette[i];
         
         ctx.rect(bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1]);
         ctx.stroke(); // draw it 
-        ctx.font="30px Arial";
+        ctx.font="10px Arial";
         let content = label + " " + parseFloat(score).toFixed(2);
         ctx.fillText(content, bbox[0], bbox[1] < 20 ? bbox[1] + 30 : bbox[1]-5);
-        
     }
-    
-    // console.log("response " + response['bbox'])
-    // for (const bboxInfo of response) {
-    //     bbox = bboxInfo['bbox']
-    //     console.log(bbox)
-    //     label = bboxInfo['label']
-    //     console.log(label)
-    //     score = bboxInfo['score']
-    //     ctx.beginPath();
-    //     ctx.lineWidth="4";
-
-    //     ctx.strokeStyle="red";
-    //     ctx.fillStyle="red";
-        
-    //     ctx.rect(bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1]);
-    //     ctx.stroke(); // draw it 
-    //     ctx.font="30px Arial";
-    //     let content = label + " " + parseFloat(score).toFixed(2);
-    //     ctx.fillText(content, bbox[0], bbox[1] < 20 ? bbox[1] + 30 : bbox[1]-5);
-       
-    // }
-    // const object = {'a': [[1,2,3,4],[4,6,7,8]], 'b': [4,4], 'c' : [10,4]};
-    // console.log(object.length)
 }
 
-// do this when image is uploaded
-$("#image").change(function() {
-    let reader = new FileReader(); //read data from upload file
-    reader.onload = function(e) { // onload assumes successful load.
-        let dataURL = reader.result; // data as a base64 encoded string.
-        $('#selected-image').attr("src", dataURL); // sets the src attribute(of selected-image) to be the result of upload file
-        var img = new Image();
-        img.src = dataURL;
-        img.onload = function(){
-            img_width = img.width;
-            img_height = img.height;
-        }
-        base64Image = dataURL.replace("data:image/png;base64,",""); //replaces "data/...." with "" which is nothing.
-    }
-    let file = $("#image")[0].files[0];
-    reader.readAsDataURL(file); // get underlying input element from jquery object, and then we access the file.
-    
-
-    //reset pred text as empty
-    $("#prediction").text("");
-});
-$("#predict-button").click(function(){
-    let message = {image: base64Image}
-    // you could also use 127.0.0.1 instead of 0.0.0.0 
-    $.post("http://localhost:5000/predict/", JSON.stringify(message), function(response){
-
-        $("#prediction").text("results" + response.results);
-        drawObject(response.results);
-        // console.log(response.bbox);
-        
+function communicate(img_base64_url) {
+    $.ajax({
+      url: "http://localhost:5000/predict/",
+      type: "POST",
+      contentType: "application/json",
+      data: JSON.stringify({"image": img_base64_url}),
+      dataType: "json"
+    }).done(function(response_data) {
+        drawResult(response_data.results);
+        $("#results").text("Results")
+        $("#disease").text("Found " + response_data.results['label']);
     });
-});       
+  }
+  
