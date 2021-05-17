@@ -1,4 +1,6 @@
 // ************************ Drag and drop ***************** //
+// Original code from https://www.smashingmagazine.com/2018/01/drag-drop-file-uploader-vanilla-js/
+// modified slightly to fit my needs. 
 let dropArea = document.getElementById("drop-area")
 const canvas = document.getElementById('canvas');
 // const image = document.getElementById('selected-image')
@@ -41,15 +43,7 @@ function handleDrop(e) {
   let files = dt.files
   ParseFiles(files)
 
-//   handleFiles(files)
-
 }
-
-function handleFiles(files) {
-    // files = [...files]
-    // // initializeProgress(files.length)
-    // files.forEach(ParseFiles)
-  }
 
 function ParseFiles(files){
     console.log(files)
@@ -58,7 +52,6 @@ function ParseFiles(files){
     const imageType = /image.*/;
     console.log("img type" + imageType)
     if (file.type.match(imageType)) {
-        // warning.innerHTML = '';
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onloadend = () => {
@@ -68,6 +61,10 @@ function ParseFiles(files){
         // send the img to server
         communicate(img_base64);
         }
+      
+    }
+    else {
+      alert("Please drop image file, only .*jpg or .*png accepted.")
     }
 }
 
