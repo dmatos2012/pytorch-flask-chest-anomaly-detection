@@ -12,21 +12,22 @@ Note: This app currently only supports 256 x 256 images and can only handle uplo
 You can [download](https://drive.google.com/file/d/1IPquF34E0t5MOnkLqUrNzbDbrElAWs2F/view?usp=sharing) this image to test the sample output in the sample demo. 
 
 # Demo usage
+`$ cd scripts`
 
 `python app.py`
 
-Then,
+Then, within the same scripts directory
 
 `python -m http.server`
 
-Open the page on the default port, and upload the image and should see the predictions, as below
+Open the page on the indicated port, and upload the image and should see the predictions, as below
 
 
 ![Sample Image](demo.png)
 
 # TODOs 
- - Upload pre-trained model checkpoint-16.pth 
- - Provide the user with ~5-6 demo images to try out the web app without having to download the entire dataset to test it. 
- - Handle input sizes different than 256 x 256
- - Handle multiple files
- - Deploy to Heroku
+ - [ ] Upload pre-trained model checkpoint-16.pth 
+ - [ ] Provide the user with ~5-6 demo images to try out the web app without having to download the entire dataset to test it. 
+ - [ ] Handle input sizes different than 256 x 256
+ - [ ] Handle multiple files
+ - [ ] Deploy to Heroku

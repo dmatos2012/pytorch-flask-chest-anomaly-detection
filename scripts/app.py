@@ -6,6 +6,7 @@ from effdet import create_model_from_config
 from effdet.config import get_efficientdet_config
 import yaml
 from easydict import EasyDict
+from pathlib import Path
 
 import torchvision.transforms as transforms
 
@@ -19,7 +20,10 @@ from timm.models.layers import set_layer_config
 from flask import Flask, jsonify, request
 import numpy as np
 
-with open("./scripts/detection_config.yaml","r") as stream:
+root_dir = Path.cwd().parent
+output_dir = root_dir / "output" 
+
+with open(str(Path.cwd() / "detection_config.yaml"),"r") as stream:
     try:
         data_yaml = yaml.load(stream, Loader=yaml.FullLoader)
         config = EasyDict(data_yaml["common"])
@@ -50,7 +54,7 @@ root = os.getcwd()
 model_name =  "tf_efficientdet_d4"
 num_classes = 15
 pretrained = False
-checkpoint_path = "./output/0325_training_6_kaggle/checkpoint-16.pth.tar" #  from exp6
+checkpoint_path = str(output_dir / "0325_training_6_kaggle/checkpoint-16.pth.tar")#  from exp6
 use_ema = False
 redundant_bias = None
 base_config = get_efficientdet_config(config.model.model)
